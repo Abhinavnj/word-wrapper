@@ -10,7 +10,7 @@
 [piazza] posts to consider: 118, 119, 126
 things to fix: the idea of if the len(word) > width
 */
-
+int wrapFile(const char* input_path, int output_fd, int width);
 int wrapContent(int input_fd, int output_fd, int width);
 
 int main(int argc, char const *argv[])
@@ -41,15 +41,8 @@ int main(int argc, char const *argv[])
     }
 
     if (S_ISREG(data.st_mode)) {
-        int input_fd = open(path, O_RDONLY);
-        if (input_fd < 0){
-            perror("ERROR"); // file cannot be opened
+        if (wrapFile(path, 1, width))
             return EXIT_FAILURE;
-        }
-        int output_fd = 1;
-        if (wrapContent(input_fd, output_fd, width) != EXIT_SUCCESS) {
-            return EXIT_FAILURE;
-        }
     } else if (S_ISDIR(data.st_mode)) {
         struct dirent* parentDirectory;
         DIR* parentDir;
@@ -82,6 +75,22 @@ int main(int argc, char const *argv[])
         closedir(parentDir);
     }
 
+    return EXIT_SUCCESS;
+}
+
+int wrapFile(const char* input_path, int output_fd, int width){
+    int input_fd = open(input_path, O_RDONLY);
+    if (input_fd < 0){
+        perror("ERROR"); // file cannot be opened
+        return EXIT_FAILURE;
+    }
+
+    if (wrapContent(input_fd, output_fd, width) != EXIT_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    close(input_fd);
+    
     return EXIT_SUCCESS;
 }
 
@@ -154,8 +163,6 @@ int wrapContent(int input_fd, int output_fd, int width) {
     if (char_count + 1 <= width) {
         write(output_fd, space_arr, sizeof(char));
     }
-
-    close(input_fd);
     
     return rc;
 }
