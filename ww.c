@@ -4,41 +4,46 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <ctype.h>
+
+/*
+[piazza] posts to consider: 118, 119, 126
+things to fix: the idea of if the len(word) > width
+*/
 
 int wrapContent(int input_fd, int output_fd, int width);
 
 int main(int argc, char const *argv[])
 {
     if (argc != 2 && argc != 3) {
-        perror("Invalid arguments\n");
+        perror("ERROR [improper arguments]");
         return EXIT_FAILURE;
     }
 
     int width = atoi(argv[1]);
 
     if (width <= 0) {
-        perror("Invalid width\n");
+        perror("ERROR [invalid width]");
         return EXIT_FAILURE;
     }
 
     if (argc == 2) {
-        printf("case 1: no file\n");
+        printf("case 1: no file");
         return EXIT_SUCCESS;
     }
 
-    // Case 2: file provided
     const char* path = argv[2];
     struct stat data;
     int rc = stat(path, &data);
     if (rc) {
-        perror("file/path error\n");
+        perror("ERROR"); // no such file or directory error
         return EXIT_FAILURE;
     }
 
     if (S_ISREG(data.st_mode)) {
         int input_fd = open(path, O_RDONLY);
         if (input_fd < 0){
-            perror("file open error\n");
+            perror("ERROR"); // file cannot be opened
             return EXIT_FAILURE;
         }
         int output_fd = 1;
@@ -81,30 +86,33 @@ int main(int argc, char const *argv[])
 }
 
 int wrapContent(int input_fd, int output_fd, int width) {
+    int rc = EXIT_SUCCESS;
+
     int bytes_read = 0;
     char buffer[width];
+
     int char_count = 0;
-    int space = 0;
-    int current_index = 0; // also tracks length of word
+    int current_index = 0; // also tracks word length
     char current_word[width];
+    int space = 0;
     int newline_counter = 0;
+
     char space_arr[1] = {' '};
     char newline_arr[1] = {'\n'};
 
     while ((bytes_read = read(input_fd, buffer, width)) > 0) {
         for (int i = 0; i < bytes_read; i++){
-            if (buffer[i] != ' ' && buffer[i] != '\n') {
+            if (!isspace(buffer[i])) {
                 current_word[current_index] = buffer[i];
                 current_index++;
                 char_count++;
                 space = 0;
                 newline_counter = 0;
             } else {
-                if (space == 0) {
-                    // print word
+                if (space == 0 && current_index != 0) {
                     if (current_index > width) {
                         perror("");
-                        return EXIT_FAILURE;
+                        rc = EXIT_FAILURE;
                     }
                     if (char_count > width) {
                         write(output_fd, newline_arr, sizeof(char));
@@ -113,7 +121,6 @@ int wrapContent(int input_fd, int output_fd, int width) {
                     write(output_fd, current_word, current_index);
                     current_index = 0;
                     
-                    // print space
                     if (char_count + 1 <= width) {
                         write(output_fd, space_arr, sizeof(char));
                         char_count++;
@@ -123,7 +130,7 @@ int wrapContent(int input_fd, int output_fd, int width) {
 
                 if (buffer[i] == '\n') {
                     newline_counter++;
-                    if (newline_counter >= 2) {
+                    if (newline_counter == 2) {
                         write(output_fd, newline_arr, sizeof(char));
                         write(output_fd, newline_arr, sizeof(char));
                         write(output_fd, current_word, current_index);
@@ -134,7 +141,7 @@ int wrapContent(int input_fd, int output_fd, int width) {
             }
         }
     }
-    // print word
+    
     if (current_index + char_count <= width) {
         write(output_fd, current_word, current_index);
     } else {
@@ -144,12 +151,11 @@ int wrapContent(int input_fd, int output_fd, int width) {
     }
     current_index = 0;
     
-    // print space
     if (char_count + 1 <= width) {
         write(output_fd, space_arr, sizeof(char));
     }
 
     close(input_fd);
     
-    return EXIT_SUCCESS;
+    return rc;
 }
