@@ -33,17 +33,19 @@ int main(int argc, char const *argv[])
     }
 
     const char* path = argv[2];
-    struct stat data;
-    int rc = stat(path, &data);
+    struct stat arg_data;
+    int rc = stat(path, &arg_data);
     if (rc) {
         perror("ERROR"); // no such file or directory error
         return EXIT_FAILURE;
     }
 
-    if (S_ISREG(data.st_mode)) {
+    if (S_ISREG(arg_data.st_mode)) {
         if (wrapFile(path, 1, width))
             return EXIT_FAILURE;
-    } else if (S_ISDIR(data.st_mode)) {
+    } else if (S_ISDIR(arg_data.st_mode)) {
+        struct stat data;
+
         struct dirent* parentDirectory;
         DIR* parentDir;
         parentDir = opendir(path);
@@ -52,7 +54,6 @@ int main(int argc, char const *argv[])
             perror("Failed to open directory!\n");
             return EXIT_FAILURE;
         }
-
         char* filename;
         while ((parentDirectory = readdir(parentDir))) {
             filename = parentDirectory->d_name;
@@ -90,7 +91,7 @@ int wrapFile(const char* input_path, int output_fd, int width){
     }
 
     close(input_fd);
-    
+
     return EXIT_SUCCESS;
 }
 
