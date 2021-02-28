@@ -59,7 +59,7 @@ int main(int argc, char const *argv[])
         while ((parentDirectory = readdir(parentDir))) {
             filename = parentDirectory->d_name;
             stat(filename, &data);
-            
+
             if (S_ISREG(data.st_mode)) {
                 printf("%s\n", filename);
                 int input_fd = open(filename, O_RDONLY);
@@ -75,7 +75,7 @@ int main(int argc, char const *argv[])
         }
 
         closedir(parentDir);
-    } 
+    }
 
     return EXIT_SUCCESS;
 }
