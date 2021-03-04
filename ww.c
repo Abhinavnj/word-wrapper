@@ -5,13 +5,15 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <string.h>
+#include <limits.h>
+#include "strbuf.h"
 
-/*
-[piazza] posts to consider: 118, 119, 126
-things to fix: the idea of if the len(word) > width
-*/
+#define BUFFER_SIZE 1
+
 int wrapFile(const char* input_path, int output_fd, int width);
 int wrapContent(int input_fd, int output_fd, int width);
+int wrapContentOriginal(int input_fd, int output_fd, int width);
 
 int main(int argc, char const *argv[])
 {
@@ -40,35 +42,43 @@ int main(int argc, char const *argv[])
         return EXIT_FAILURE;
     }
 
-    if (S_ISREG(arg_data.st_mode)) {
-        if (wrapFile(path, 1, width))
+    if (S_ISREG(arg_data.st_mode)) { // if the argument is a file
+        if (wrapFile(path, 1, width)) {
             return EXIT_FAILURE;
-    } else if (S_ISDIR(arg_data.st_mode)) {
-        struct stat data;
-
+        }
+    } else if (S_ISDIR(arg_data.st_mode)) { // if the argument is a directory
         struct dirent* parentDirectory;
         DIR* parentDir;
-        parentDir = opendir(path);
 
+        parentDir = opendir(path);
         if (!parentDir) {
             perror("Failed to open directory!\n");
             return EXIT_FAILURE;
         }
+
+        struct stat data;
         char* filename;
         while ((parentDirectory = readdir(parentDir))) {
             filename = parentDirectory->d_name;
-            stat(filename, &data);
 
+            char filepath[strlen(path)+strlen(filename) + 2];
+            strcpy(filepath, path);
+            strcat(filepath, "/");
+            strcat(filepath, filename);
+
+            stat(filepath, &data);
             if (S_ISREG(data.st_mode)) {
-                printf("%s\n", filename);
-                int input_fd = open(filename, O_RDONLY);
-                if (input_fd < 0){
-                    perror("file open error");
-                    return EXIT_FAILURE;
-                }
-                int output_fd = 1;
-                if (wrapContent(input_fd, output_fd, width) != EXIT_SUCCESS) {
-                    return EXIT_FAILURE;
+                if ((filename[0] != '.') && (strncmp("wrap", filename, strlen("wrap")) != 0)) {
+                    int output_file_size = strlen(path) + strlen("/wrap.") + strlen(filename) + 1;
+                    char output_file[output_file_size];
+                    strcpy(output_file, path);
+                    strcat(output_file, "/wrap.");
+                    strcat(output_file, filename);
+
+                    int output_fd = open(output_file, O_RDWR|O_TRUNC|O_CREAT, 0777);
+                    if (wrapFile(filepath, output_fd, width)) {
+                        return EXIT_FAILURE;
+                    }
                 }
             }
         }
@@ -97,43 +107,49 @@ int wrapFile(const char* input_path, int output_fd, int width){
 
 int wrapContent(int input_fd, int output_fd, int width) {
     int rc = EXIT_SUCCESS;
-
+    
     int bytes_read = 0;
-    char buffer[width];
+    char buffer[BUFFER_SIZE];
 
     int char_count = 0;
-    int current_index = 0; // also tracks word length
-    char current_word[width];
+    strbuf_t current_word;
+    sb_init(&current_word, 1);
+
     int space = 0;
     int newline_counter = 0;
-
     char space_arr[1] = {' '};
     char newline_arr[1] = {'\n'};
 
-    while ((bytes_read = read(input_fd, buffer, width)) > 0) {
+    while ((bytes_read = read(input_fd, buffer, BUFFER_SIZE)) > 0) {
         for (int i = 0; i < bytes_read; i++){
-            if (!isspace(buffer[i])) {
-                current_word[current_index] = buffer[i];
-                current_index++;
+            if (!isspace(buffer[i])){
                 char_count++;
+                sb_append(&current_word, buffer[i]);
                 space = 0;
                 newline_counter = 0;
             } else {
-                if (space == 0 && current_index != 0) {
-                    if (current_index > width) {
-                        perror("");
-                        rc = EXIT_FAILURE;
-                    }
-                    if (char_count > width) {
+                if (space == 0 && current_word.used != 0) {
+                    if (current_word.used > width) {
                         write(output_fd, newline_arr, sizeof(char));
-                        char_count = current_index;
-                    }
-                    write(output_fd, current_word, current_index);
-                    current_index = 0;
-                    
-                    if (char_count + 1 <= width) {
-                        write(output_fd, space_arr, sizeof(char));
-                        char_count++;
+                        write(output_fd, current_word.data, current_word.used);
+                        write(output_fd, newline_arr, sizeof(char));
+                        sb_destroy(&current_word);
+                        sb_init(&current_word, 1);
+                        char_count = 0;
+                        rc = EXIT_FAILURE;
+                    } else {
+                        if (char_count > width) {
+                            write(output_fd, newline_arr, sizeof(char));
+                            char_count = current_word.used;
+                        }
+                        write(output_fd, current_word.data, current_word.used);
+                        sb_destroy(&current_word);
+                        sb_init(&current_word, 1);
+
+                        if (char_count + 1 <= width) {
+                            write(output_fd, space_arr, sizeof(char));
+                            char_count++;
+                        }
                     }
                 }
                 space = 1;
@@ -143,27 +159,24 @@ int wrapContent(int input_fd, int output_fd, int width) {
                     if (newline_counter == 2) {
                         write(output_fd, newline_arr, sizeof(char));
                         write(output_fd, newline_arr, sizeof(char));
-                        write(output_fd, current_word, current_index);
-                        char_count = current_index;
-                        current_index = 0;
+                        write(output_fd, current_word.data, current_word.used);
+                        char_count = current_word.used;
                     }
                 }
             }
         }
     }
-    
-    if (current_index + char_count <= width) {
-        write(output_fd, current_word, current_index);
+
+    if (current_word.used + char_count <= width) {
+        write(output_fd, current_word.data, current_word.used);
     } else {
         write(output_fd, newline_arr, sizeof(char));
-        write(output_fd, current_word, current_index);
-        char_count = current_index;
+        write(output_fd, current_word.data, current_word.used);
+        char_count = current_word.used;
     }
-    current_index = 0;
-    
-    if (char_count + 1 <= width) {
-        write(output_fd, space_arr, sizeof(char));
-    }
-    
+    sb_destroy(&current_word);
+
+    write(output_fd, newline_arr, sizeof(char));
+
     return rc;
 }

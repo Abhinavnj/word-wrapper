@@ -1,14 +1,11 @@
-OUTPUT=ww
-CFLAGS=-g -Wall -Werror -fsanitize=address -std=c99
-LFLAGS=-lm
+ww: ww.o strbuf.o
+	gcc -g -std=c99 -Wvla -Wall -fsanitize=address,undefined -o ww ww.o strbuf.o
 
-%: %.c %.h
-	gcc $(CFLAGS) -o $@ $< $(LFLAGS)
+ww.o: ww.c strbuf.h
+	gcc -c -g -std=c99 -Wvla -Wall -fsanitize=address,undefined ww.c
 
-%: %.c
-	gcc $(CFLAGS) -o $@ $< $(LFLAGS)
-
-all: $(OUTPUT)
+strbuf.o: strbuf.c strbuf.h
+	gcc -c -g -std=c99 -Wvla -Wall -fsanitize=address,undefined strbuf.c
 
 clean:
 	rm -f *.o $(OUTPUT)

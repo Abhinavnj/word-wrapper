@@ -1,2 +1,4 @@
 *.dSYM
 ww
+files/wrap.*
+*.o
