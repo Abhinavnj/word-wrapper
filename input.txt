@@ -3,5 +3,4 @@ of being
 an
 example.
 
-That       is
-       good.
+This is good.

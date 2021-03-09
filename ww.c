@@ -13,7 +13,6 @@
 
 int wrapFile(const char* input_path, int output_fd, int width);
 int wrapContent(int input_fd, int output_fd, int width);
-int wrapContentOriginal(int input_fd, int output_fd, int width);
 
 int main(int argc, char const *argv[])
 {
@@ -30,17 +29,20 @@ int main(int argc, char const *argv[])
     }
 
     if (argc == 2) {
-        printf("case 1: no file");
+        if (wrapContent(0, 1, width)){
+            return EXIT_FAILURE;
+        }
         return EXIT_SUCCESS;
     }
 
     const char* path = argv[2];
     struct stat arg_data;
-    int rc = stat(path, &arg_data);
-    if (rc) {
+    if (stat(path, &arg_data)) {
         perror("ERROR"); // no such file or directory error
         return EXIT_FAILURE;
     }
+
+    int rc = EXIT_SUCCESS;
 
     if (S_ISREG(arg_data.st_mode)) { // if the argument is a file
         if (wrapFile(path, 1, width)) {
@@ -58,10 +60,13 @@ int main(int argc, char const *argv[])
 
         struct stat data;
         char* filename;
+        char* filepath = malloc(0);
+        char* output_file = malloc(0);
         while ((parentDirectory = readdir(parentDir))) {
             filename = parentDirectory->d_name;
 
-            char filepath[strlen(path)+strlen(filename) + 2];
+            int filepath_size = strlen(path)+strlen(filename) + 2;
+            filepath = realloc(filepath, filepath_size * sizeof(char));
             strcpy(filepath, path);
             strcat(filepath, "/");
             strcat(filepath, filename);
@@ -70,23 +75,27 @@ int main(int argc, char const *argv[])
             if (S_ISREG(data.st_mode)) {
                 if ((filename[0] != '.') && (strncmp("wrap", filename, strlen("wrap")) != 0)) {
                     int output_file_size = strlen(path) + strlen("/wrap.") + strlen(filename) + 1;
-                    char output_file[output_file_size];
+
+                    output_file = realloc(output_file, sizeof(char) * output_file_size);
                     strcpy(output_file, path);
                     strcat(output_file, "/wrap.");
                     strcat(output_file, filename);
 
                     int output_fd = open(output_file, O_RDWR|O_TRUNC|O_CREAT, 0777);
                     if (wrapFile(filepath, output_fd, width)) {
-                        return EXIT_FAILURE;
+                        rc = EXIT_FAILURE;
                     }
                 }
             }
         }
 
+        free(filepath);
+        free(output_file);
+
         closedir(parentDir);
     }
 
-    return EXIT_SUCCESS;
+    return rc;
 }
 
 int wrapFile(const char* input_path, int output_fd, int width){
@@ -117,16 +126,19 @@ int wrapContent(int input_fd, int output_fd, int width) {
 
     int space = 0;
     int newline_counter = 0;
+    int character_counter = 0;
     char space_arr[1] = {' '};
     char newline_arr[1] = {'\n'};
 
+    int i = 0;
     while ((bytes_read = read(input_fd, buffer, BUFFER_SIZE)) > 0) {
-        for (int i = 0; i < bytes_read; i++){
+        for (i = 0; i < bytes_read; i++){
             if (!isspace(buffer[i])){
                 char_count++;
                 sb_append(&current_word, buffer[i]);
                 space = 0;
                 newline_counter = 0;
+                character_counter++;
             } else {
                 if (space == 0 && current_word.used != 0) {
                     if (current_word.used > width) {
@@ -138,25 +150,25 @@ int wrapContent(int input_fd, int output_fd, int width) {
                         char_count = 0;
                         rc = EXIT_FAILURE;
                     } else {
-                        if (char_count > width) {
+                        if (char_count+1 > width) {
                             write(output_fd, newline_arr, sizeof(char));
                             char_count = current_word.used;
                         }
-                        write(output_fd, current_word.data, current_word.used);
-                        sb_destroy(&current_word);
-                        sb_init(&current_word, 1);
-
-                        if (char_count + 1 <= width) {
+                        if (char_count != current_word.used) {
                             write(output_fd, space_arr, sizeof(char));
                             char_count++;
                         }
+
+                        write(output_fd, current_word.data, current_word.used);
+                        sb_destroy(&current_word);
+                        sb_init(&current_word, 1);
                     }
                 }
                 space = 1;
 
                 if (buffer[i] == '\n') {
                     newline_counter++;
-                    if (newline_counter == 2) {
+                    if (newline_counter == 2 && character_counter > 0) {
                         write(output_fd, newline_arr, sizeof(char));
                         write(output_fd, newline_arr, sizeof(char));
                         write(output_fd, current_word.data, current_word.used);
@@ -167,13 +179,18 @@ int wrapContent(int input_fd, int output_fd, int width) {
         }
     }
 
-    if (current_word.used + char_count <= width) {
-        write(output_fd, current_word.data, current_word.used);
+    // print remaining buffer contents after reading is finished
+    if (current_word.used + char_count + 1 <= width) {
+        if (current_word.used != 0){
+            write(output_fd, space_arr, sizeof(char));
+            write(output_fd, current_word.data, current_word.used);
+        }
     } else {
         write(output_fd, newline_arr, sizeof(char));
         write(output_fd, current_word.data, current_word.used);
         char_count = current_word.used;
     }
+
     sb_destroy(&current_word);
 
     write(output_fd, newline_arr, sizeof(char));
