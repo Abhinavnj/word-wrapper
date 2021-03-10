@@ -26,3 +26,5 @@ We ensured the correctness of our program by outputting the the result to a txt 
 We ensured the robustness of our buffer by setting it to different buffer sizes including some that are less than, greater than, or equal to the width of the largest word in the input file.
 
 We ensured the consistency of our program by redirecting the output of our program to a file, output1. We then ran our program on the output1 and redirected the output of that to another file, output2. We then ran the cmp bash command on the two files, output1 and output2, and ensured that the files were exactly the same.
+
+In addition to manual testing, we also wrote a Python script to automate the comparison of the output of our program with the expected output.

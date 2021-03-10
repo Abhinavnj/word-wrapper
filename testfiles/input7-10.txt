@@ -1,4 +1,3 @@
 hi my 
 name 
-is refrigerator pi
-hi
+is refrigerator

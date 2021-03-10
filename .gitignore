@@ -2,3 +2,4 @@
 *.o
 ww
 directory/wrap.*
+ww_output.txt
