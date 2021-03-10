@@ -165,7 +165,7 @@ int wrapContent(int input_fd, int output_fd, int width) {
                     }
                 }
                 space = 1;
-
+                
                 if (buffer[i] == '\n') {
                     newline_counter++;
                     if (newline_counter == 2 && character_counter > 0) {
@@ -180,6 +180,8 @@ int wrapContent(int input_fd, int output_fd, int width) {
     }
 
     // print remaining buffer contents after reading is finished
+    printf("%d  %d\n", newline_counter, char_count);
+    printf("%d  %d")
     if (current_word.used + char_count + 1 <= width) {
         if (current_word.used != 0){
             write(output_fd, space_arr, sizeof(char));
