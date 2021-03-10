@@ -2,6 +2,7 @@
 
 ### Authors
 Abhinav Sirohi | as3249
+<br>
 Srinandini Marpaka | sm2237
 
 ### Testing Strategy
