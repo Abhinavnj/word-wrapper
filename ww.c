@@ -134,6 +134,14 @@ int wrapContent(int input_fd, int output_fd, int width) {
     while ((bytes_read = read(input_fd, buffer, BUFFER_SIZE)) > 0) {
         for (i = 0; i < bytes_read; i++){
             if (!isspace(buffer[i])){
+                // second condition accounts for >1 \n in the beginning
+                if (newline_counter >= 2 && character_counter > 0) {
+                    write(output_fd, newline_arr, sizeof(char));
+                    write(output_fd, newline_arr, sizeof(char));
+                    write(output_fd, current_word.data, current_word.used);
+                    char_count = current_word.used;
+                }
+
                 char_count++;
                 sb_append(&current_word, buffer[i]);
                 space = 0;
@@ -142,9 +150,11 @@ int wrapContent(int input_fd, int output_fd, int width) {
             } else {
                 if (space == 0 && current_word.used != 0) {
                     if (current_word.used > width) {
-                        write(output_fd, newline_arr, sizeof(char));
+                        if (char_count != character_counter) {
+                            write(output_fd, newline_arr, sizeof(char));
+                        }
                         write(output_fd, current_word.data, current_word.used);
-                        write(output_fd, newline_arr, sizeof(char));
+                        // write(output_fd, newline_arr, sizeof(char));
                         sb_destroy(&current_word);
                         sb_init(&current_word, 1);
                         char_count = 0;
@@ -168,23 +178,19 @@ int wrapContent(int input_fd, int output_fd, int width) {
                 
                 if (buffer[i] == '\n') {
                     newline_counter++;
-                    if (newline_counter == 2 && character_counter > 0) {
-                        write(output_fd, newline_arr, sizeof(char));
-                        write(output_fd, newline_arr, sizeof(char));
-                        write(output_fd, current_word.data, current_word.used);
-                        char_count = current_word.used;
-                    }
                 }
             }
         }
     }
 
     // print remaining buffer contents after reading is finished
-    printf("%d  %d\n", newline_counter, char_count);
-    printf("%d  %d")
+    // printf("%d  %d\n", newline_counter, char_count);
     if (current_word.used + char_count + 1 <= width) {
-        if (current_word.used != 0){
-            write(output_fd, space_arr, sizeof(char));
+        if (current_word.used != 0) {
+            // printf("%zu   %d\n", current_word.used, char_count);
+            if (current_word.used != char_count) {
+                write(output_fd, space_arr, sizeof(char));
+            }
             write(output_fd, current_word.data, current_word.used);
         }
     } else {
