@@ -1,4 +1,4 @@
 *.dSYM
-ww
-files/wrap.*
 *.o
+ww
+directory/wrap.*
