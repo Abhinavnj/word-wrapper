@@ -11,8 +11,7 @@
 - 0, 1, or multiple whitespace characters at the beginning of the file
 - 0, 1, or multiple whitespace characters at the end of the file
 - 0, 1, or multiple whitespace characters in the middle of the file
-- invalid arguments (width $\leq$ 0)
-
+- invalid arguments (width <= 0)
 - case where the final word would need to be moved to a new line if the desired width was exceeded
 - a singular word exceeds the desired width, the program should continue and return exit failure
 - ensuring that all the files starting with '.' or 'wrap' are skipped
