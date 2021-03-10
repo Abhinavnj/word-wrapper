@@ -185,10 +185,8 @@ int wrapContent(int input_fd, int output_fd, int width) {
     if (current_word.used > 0){
         if (char_count == current_word.used){
             write(output_fd, current_word.data, current_word.used);
-        } else if (current_word.used + char_count + 1 <= width) {
-            if (current_word.used != char_count) {
-                write(output_fd, space_arr, sizeof(char));
-            }
+        } else if (char_count + 1 <= width) {
+            write(output_fd, space_arr, sizeof(char));
             write(output_fd, current_word.data, current_word.used);
         } else {
             write(output_fd, newline_arr, sizeof(char));
