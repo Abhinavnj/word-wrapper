@@ -1,6 +1,6 @@
 # C Word Wrapper
 
-*Completed in collaboration between Abhinav Sirohi (as3249) & Srinandini Marpaka (sm2237) for Systems Programmong (01:198:214)*
+*Completed in collaboration between Abhinav Sirohi (as3249) & Srinandini Marpaka (sm2237) for Systems Programming (01:198:214)*
 
 ### Testing
 #### Test Cases
@@ -21,10 +21,14 @@
 - in directories, ensuring that the wrapping continues even if one file fails
 
 #### Strategy
+##### Correctness
 We ensured the correctness of our program by outputting the the result to a txt file and comparing using the cmp bash command with a file that contained the desired result. We also opened the output file in a text editor that allows us to see if there are extra whitespace characters and we ensured that this was not the case.
 
+##### Robustness
 We ensured the robustness of our buffer by setting it to different buffer sizes including some that are less than, greater than, or equal to the width of the largest word in the input file.
 
+##### Consistency
 We ensured the consistency of our program by redirecting the output of our program to a file, output1. We then ran our program on the output1 and redirected the output of that to another file, output2. We then ran the cmp bash command on the two files, output1 and output2, and ensured that the files were exactly the same.
 
+##### Automated Testing
 In addition to manual testing, we also wrote a Python script to automate the comparison of the output of our program with the expected output.
