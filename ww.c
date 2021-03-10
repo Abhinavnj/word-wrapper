@@ -158,7 +158,6 @@ int wrapContent(int input_fd, int output_fd, int width) {
                         // char_count = 0;
                         rc = EXIT_FAILURE;
                     } else {
-                        // printf("\n%zu  %d\n", current_word.used, char_count);
                         if (char_count + 1 > width) {
                             write(output_fd, newline_arr, sizeof(char));
                             char_count = current_word.used;
@@ -196,7 +195,6 @@ int wrapContent(int input_fd, int output_fd, int width) {
             write(output_fd, current_word.data, current_word.used);
             char_count = current_word.used;
         }
-        // write(output_fd, newline_arr, sizeof(char));
     }
 
     if (character_counter > 0){
