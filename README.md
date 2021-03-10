@@ -1,12 +1,9 @@
-# C Word Wrapper
+# C Word-Wrapper
 
-### Authors
-Abhinav Sirohi | as3249
-<br>
-Srinandini Marpaka | sm2237
+*Completed in collaboration between Abhinav Sirohi (as3249) & Srinandini Marpaka (sm2237) for Systems Programmong (01:198:214)*
 
-### Testing Strategy
-In order to test our code, we tried multiple scenarios:
+### Testing
+#### Test Cases
 - 0, 1, or multiple newline characters at the beginning of the file
 - 0, 1, or multiple newline characters at the end of the file
 - multiple newline characters in the middle of the file
@@ -23,7 +20,8 @@ In order to test our code, we tried multiple scenarios:
 - the width is less than or equal to 0
 - improper arguments
 - buffer length 1
-
+- empty file
+#### Strategy
 We ensured the correctness of our program by outputting the the result to a txt file and comparing using the cmp bash command with a file that contained the desired result. We also opened the output file in a text editor that allows us to see if there are extra whitespace characters and we ensured that this was not the case.
 
 We ensured the robustness of our buffer by setting it to different buffer sizes including some that are less than, greater than, or equal to the width of the largest word in the input file.
